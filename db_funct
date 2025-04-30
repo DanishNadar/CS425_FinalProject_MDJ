@@ -85,3 +85,27 @@ def create_renter(renter_email, desired_move_in_date, preferred_location, budget
         return False
     finally:
         conn.close()
+
+# Address Functions
+def create_address(address_id , user_email , city, state, zip):
+    conn = connect()
+    if conn is None:
+        print("Connection to the database failed.")
+        return False
+    
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO Renter (address_id , user_email , city, state, zip) 
+                VALUES (%s, %s, %s, %s, %s)""",
+                (address_id , user_email , city, state, zip)
+            )
+            conn.commit()
+            return True
+    except Exception as e:
+        print(f"Error creating address: {e}")
+        conn.rollback()
+        return False
+    finally:
+        conn.close()
+
