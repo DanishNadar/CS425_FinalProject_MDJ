@@ -35,30 +35,6 @@ def list_available_properties():
     """
     return fetch_all_items(sql)
 
-def book_property(property_id, renter_email, card_id):
-    sql_insert = """
-      INSERT INTO Booking (booking_date, property_id, renter_email, card_id)
-      VALUES (CURRENT_DATE, %s, %s, %s);
-    """
-    sql_update = """
-      UPDATE Property
-         SET availability = FALSE
-       WHERE property_id = %s;
-    """
-    co = connect()
-    if not co:
-        return False
-    try:
-        with co:
-            with co.cursor() as c:
-                c.execute(sql_insert, (property_id, renter_email, card_id))
-                c.execute(sql_update, (property_id,))
-        return True
-    except Exception as e:
-        print("ERROR: Booking Property:", e)
-        return False
-    finally:
-        co.close()
       
 def execute_sql(sql, params=()):
     co = connect()
@@ -86,5 +62,64 @@ def fetch_all_items(sql, params=()):
     except Exception as e:
         print("SQL ERROR:", e)
         return []
+    finally:
+        co.close()
+
+def create_property(agent_email, city, state, zip_code, rental_price, description, sq_footage, property_type):
+    co = connect()
+    if not co:
+        return False
+    
+    try:
+        with co:
+            with co.cursor() as c:
+                c.execute("SELECT address_id FROM Address WHERE user_email = %s", (agent_email,))
+                address_id = c.fetchone()['address_id']
+                
+                c.execute("""
+                    INSERT INTO Property 
+                    (agent_email, address_id, rental_price, description, sq_footage, property_type)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (agent_email, address_id, rental_price, description, sq_footage, property_type))
+                
+             
+                c.execute("SELECT LASTVAL()")
+                property_id = c.fetchone()['lastval']
+                
+             
+                if property_type == 'House':
+                    num_rooms = int(input("Number of rooms: "))
+                    c.execute("""
+                        INSERT INTO House (property_id, num_rooms)
+                        VALUES (%s, %s)
+                    """, (property_id, num_rooms))
+                elif property_type == 'Apartment':
+                    num_rooms = int(input("Number of rooms: "))
+                    building_type = input("Building type: ")
+                    c.execute("""
+                        INSERT INTO Apartment (property_id, num_rooms, building_type)
+                        VALUES (%s, %s, %s)
+                    """, (property_id, num_rooms, building_type))
+                
+                
+        return True
+    except Exception as e:
+        print("ERROR creating property:", e)
+        return False
+    finally:
+        co.close()
+
+def get_user(email):
+    co = connect()
+    if not co:
+        return None
+    
+    try:
+        with co.cursor() as cur:
+            cur.execute("SELECT * FROM Users WHERE email = %s", (email,))
+            return cur.fetchone()
+    except Exception as e:
+        print(f"Error fetching user: {e}")
+        return None
     finally:
         co.close()

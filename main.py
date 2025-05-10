@@ -1,7 +1,8 @@
 from db_functions import (
     create_user, create_agent, create_renter,
-    create_address, create_cc,
-    list_available_properties, book_property
+    create_address, create_cc, get_user,
+    list_available_properties,
+    create_property
 )
 
 def pause():
@@ -41,8 +42,31 @@ def add_address():
     city = input("City: ")
     state = input("State: ")
     zipc = input("ZIP: ")
-    if create_address(user_email=email, city=city, state=state, zip_code=zipc):
-        print("✓ Address created")
+    
+    # Check if user is an agent
+    user = get_user(email)
+    if user and user['user_type'] == 'AGENT':
+        print("\nAgent detected - creating property listing")
+        # Get property details
+        rental_price = float(input("Rental price: "))
+        description = input("Property description: ")
+        sq_footage = int(input("Square footage: "))
+        property_type = input("Property type (House/Apartment/Commercial_Building/Vacation_Home/Land): ")
+        
+        # First create the address
+        if create_address(user_email=email, city=city, state=state, zip_code=zipc):
+            print("✓ Address created")
+            # Then create the property
+            if create_property(agent_email=email, city=city, state=state, zip_code=zipc,
+                             rental_price=rental_price, description=description,
+                             sq_footage=sq_footage, property_type=property_type):
+                print("✓ Property listing created")
+        else:
+            print("Failed to create address")
+    else:
+        # Regular address creation for non-agents
+        if create_address(user_email=email, city=city, state=state, zip_code=zipc):
+            print("✓ Address created")
 
 def add_cc():
     print("\nAdd a credit card")
@@ -68,13 +92,6 @@ def booking():
     for p in props:
         print(f"[{p['property_id']}] {p['description']} — ${p['rental_price']}/mo — {p['neighborhood']}")
 
-    pid = int(input("\nEnter property ID to book: "))
-    renter = input("Your renter email: ")
-    card = int(input("Which card ID to use: "))
-    if book_property(property_id=pid, renter_email=renter, card_id=card):
-        print("Booking successful!")
-    else:
-        print("Booking failed.")
 
 def main():
     actions = {
