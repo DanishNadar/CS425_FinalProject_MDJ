@@ -1,4 +1,3 @@
--- sample_data.sql
 BEGIN;
 
 -- 1) Users (agents and renters)
